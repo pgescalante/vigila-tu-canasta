@@ -1,14 +1,12 @@
 from io import BytesIO
-from pathlib import Path
-
 import boto3
 import pandas as pd
-
 
 BUCKET_NAME = "itam-analytics-paulo"
 
 SILVER_PREFIX = "vigila-canasta/silver/inegi/precios_promedio/cdmx/"
 GOLD_PREFIX = "vigila-canasta/gold/inflacion_productos/"
+CATALOG_PREFIX = "vigila-canasta/gold/catalogos/"
 
 
 def list_silver_parquets(s3_client):
@@ -41,23 +39,18 @@ def load_silver_data(s3_client):
 
     for key in parquet_files:
         print(f"Leyendo: s3://{BUCKET_NAME}/{key}")
-
         df_temp = read_parquet_from_s3(s3_client, key)
         dfs.append(df_temp)
 
-    df = pd.concat(dfs, ignore_index=True)
-
-    return df
+    return pd.concat(dfs, ignore_index=True)
 
 
 def filter_active_products(df):
     """
-    Conserva productos observados
-    dentro de los últimos 12 meses.
+    Conserva productos observados dentro de los últimos 12 meses.
     """
 
     max_date = df["fecha"].max()
-
     cutoff_date = max_date - pd.DateOffset(months=12)
 
     latest_dates = (
@@ -68,12 +61,10 @@ def filter_active_products(df):
 
     active_products = latest_dates.loc[
         latest_dates["fecha"] >= cutoff_date,
-        "producto_id"
+        "producto_id",
     ]
 
-    df = df[df["producto_id"].isin(active_products)]
-
-    return df
+    return df[df["producto_id"].isin(active_products)].copy()
 
 
 def calculate_inflation(df):
@@ -105,17 +96,14 @@ def calculate_inflation(df):
 
 
 def write_gold_parquet(s3_client, df):
-    output_key = (
-        f"{GOLD_PREFIX}"
-        f"inflacion_productos.parquet"
-    )
+    output_key = f"{GOLD_PREFIX}inflacion_productos.parquet"
 
     buffer = BytesIO()
 
     df.to_parquet(
         buffer,
         index=False,
-        engine="pyarrow"
+        engine="pyarrow",
     )
 
     buffer.seek(0)
@@ -128,6 +116,48 @@ def write_gold_parquet(s3_client, df):
 
     print(
         f"\nGold creado correctamente:\n"
+        f"s3://{BUCKET_NAME}/{output_key}"
+    )
+
+
+def write_product_catalog(s3_client, df):
+    catalog = (
+        df[
+            [
+                "producto_id",
+                "subclase",
+                "generico",
+                "especificacion",
+                "cantidad",
+                "unidad",
+            ]
+        ]
+        .drop_duplicates()
+        .sort_values(
+            by=["subclase", "generico", "especificacion"]
+        )
+    )
+
+    output_key = f"{CATALOG_PREFIX}productos.parquet"
+
+    buffer = BytesIO()
+
+    catalog.to_parquet(
+        buffer,
+        index=False,
+        engine="pyarrow",
+    )
+
+    buffer.seek(0)
+
+    s3_client.put_object(
+        Bucket=BUCKET_NAME,
+        Key=output_key,
+        Body=buffer.getvalue(),
+    )
+
+    print(
+        f"\nCatálogo creado correctamente:\n"
         f"s3://{BUCKET_NAME}/{output_key}"
     )
 
@@ -167,6 +197,9 @@ def main():
 
     print("\nEscribiendo Gold...")
     write_gold_parquet(s3_client, df)
+
+    print("\nCreando catálogo de productos...")
+    write_product_catalog(s3_client, df)
 
     print("\nProceso Gold terminado correctamente.")
 
