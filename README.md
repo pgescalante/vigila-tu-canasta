@@ -1,5 +1,9 @@
 # Vigila tu Canasta
 
+## URL pública
+
+http://54.157.184.71:8501
+
 ## Vista General
 
 **Vigila tu Canasta** es una aplicación creada para monitorear la evolución de los precios promedio de bienes y servicios en la Ciudad de México utilizando información pública del INEGI (**https://www.inegi.org.mx/app/preciospromedio/?bs=18a**)
@@ -259,11 +263,3 @@ El flujo completo de deployment fue documentado en notebooks del proyecto e incl
 Notebook principal:
 
 notebooks/docker_build.ipynb
-
----
-
-### URL pública
-
-La aplicación desplegada puede ser accedida públicamente mediante:
-
-http://54.157.184.71:8501
