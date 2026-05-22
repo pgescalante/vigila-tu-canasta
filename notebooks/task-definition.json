@@ -1,0 +1,25 @@
+{
+    "family": "vigila-tu-canasta-task",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "1024",
+    "memory": "2048",
+    "executionRoleArn": "arn:aws:iam::988261566883:role/ecsTaskExecutionRole",
+    "taskRoleArn": "arn:aws:iam::988261566883:role/ecsTaskExecutionRole",
+    "containerDefinitions": [
+        {
+            "name": "vigila-tu-canasta",
+            "image": "988261566883.dkr.ecr.us-east-1.amazonaws.com/vigila-tu-canasta:latest",
+            "essential": true,
+            "portMappings": [
+                {
+                    "containerPort": 8501,
+                    "hostPort": 8501,
+                    "protocol": "tcp"
+                }
+            ]
+        }
+    ]
+}
