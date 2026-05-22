@@ -8,6 +8,7 @@ PREFIXES = [
     "vigila-canasta/silver/",
     "vigila-canasta/gold/",
     "vigila-canasta/artifacts/",
+    "vigila-canasta/app/canastas/",
 ]
 
 
